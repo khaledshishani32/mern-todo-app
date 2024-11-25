@@ -5,6 +5,7 @@ import axios from 'axios';
 const TodoList = () => {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     axios.get('http://localhost:5000/tasks')
@@ -13,8 +14,21 @@ const TodoList = () => {
 
   const addTask = () => {
     axios.post('http://localhost:5000/tasks', { text: newTask })
-      .then(response => setTasks([...tasks, response.data]));
-    setNewTask(""); // Clear the input after adding a task
+      .then(response => {
+        setTasks([...tasks, response.data]);
+        setErrorMessage(""); // Clear error message if task is added successfully
+      })
+      .catch(error => {
+        if (error.response && error.response.data) {
+          setErrorMessage(error.response.data.message); // Display error message from the backend
+
+          // Clear the error message after 5 seconds
+          setTimeout(() => {
+            setErrorMessage(""); // Clear error after 5 seconds
+          }, 3000);
+        }
+      });
+    setNewTask(""); // Clear input field
   };
 
   const removeTask = (id) => {
@@ -27,12 +41,27 @@ const TodoList = () => {
       .then(response => {
         const updatedTasks = tasks.map(task => task._id === id ? response.data : task);
         setTasks(updatedTasks);
+        setErrorMessage(""); // Clear error message if task is updated successfully
+      })
+      .catch(error => {
+        if (error.response && error.response.data) {
+          setErrorMessage(error.response.data.message); // Display error message from the backend
+
+          // Clear the error message after 5 seconds
+          setTimeout(() => {
+            setErrorMessage(""); // Clear error after 5 seconds
+          }, 3000);
+        }
       });
   };
 
   return (
     <div className="todo-list-container">
       <h1>Todo List</h1>
+
+      {/* Display error message if task already exists */}
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
+
       <input
         type="text"
         value={newTask}
